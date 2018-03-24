@@ -133,7 +133,8 @@ int TransactionLevelGCManager::Unlink(const int &thread_id,
     }
 
     // Log the query into query_history_catalog
-    if (settings::SettingsManager::GetBool(settings::SettingId::brain)) {
+    if (settings::SettingsManager::GetBool(
+            settings::SettingId::query_logging)) {
       std::vector<std::string> query_strings = txn_ctx->GetQueryStrings();
       if(query_strings.size() != 0) {
         uint64_t timestamp = txn_ctx->GetTimestamp();

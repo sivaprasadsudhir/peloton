@@ -152,9 +152,15 @@ SETTING_bool(layout_tuner,
 
 // Enable or disable brain
 SETTING_bool(brain,
-            "Enable brain (default: false)",
-            false,
-            true, true)
+             "Enable brain (default: false)",
+             false,
+             true, true)
+
+// Enable or disable query history logging
+SETTING_bool(query_logging,
+             "Enable query history logging (default: false)",
+             false,
+             true, true)
 
 SETTING_string(peloton_address,
                "ip and port of the peloton rpc service, address:port",

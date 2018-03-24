@@ -44,7 +44,7 @@ void PelotonInit::Initialize() {
   threadpool::MonoQueuePool::GetInstance().Startup();
 
   // start indextuner thread pool
-  if (settings::SettingsManager::GetBool(settings::SettingId::brain)) {
+  if (settings::SettingsManager::GetBool(settings::SettingId::query_logging)) {
     threadpool::MonoQueuePool::GetBrainInstance().Startup();
   }
 
@@ -114,7 +114,7 @@ void PelotonInit::Shutdown() {
   threadpool::MonoQueuePool::GetInstance().Shutdown();
 
   // stop indextuner thread pool
-  if (settings::SettingsManager::GetBool(settings::SettingId::brain)) {
+  if (settings::SettingsManager::GetBool(settings::SettingId::query_logging)) {
     threadpool::MonoQueuePool::GetBrainInstance().Shutdown();
   }
 

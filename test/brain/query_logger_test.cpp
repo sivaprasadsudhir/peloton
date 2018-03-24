@@ -22,7 +22,8 @@ namespace test {
 class QueryLoggerTests : public PelotonTest {
  protected:
   void SetUp() override {
-    settings::SettingsManager::SetBool(settings::SettingId::brain, true);
+    settings::SettingsManager::SetBool(settings::SettingId::query_logging,
+        true);
     PelotonInit::Initialize();
 
     // query to check that logging is done

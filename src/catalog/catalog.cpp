@@ -154,7 +154,7 @@ void Catalog::Bootstrap() {
   LanguageCatalog::GetInstance(txn);
   ProcCatalog::GetInstance(txn);
   
-  if (settings::SettingsManager::GetBool(settings::SettingId::brain)) {
+  if (settings::SettingsManager::GetBool(settings::SettingId::query_logging)) {
     QueryHistoryCatalog::GetInstance(txn);
   }
 
