@@ -52,8 +52,10 @@ class QueryLogger {
    *
    * @param the sql string corresponding to the query
    * @param timestamp of the transaction that executed the query
+   * @param latency of the query
    */
-  static void LogQuery(std::string query_string, uint64_t timestamp);
+  static void LogQuery(std::string query_string, uint64_t timestamp,
+                       double latency);
 };
 
 }  // namespace brain

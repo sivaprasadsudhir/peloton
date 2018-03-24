@@ -32,7 +32,8 @@ QueryLogger::Fingerprint::~Fingerprint() {
   pg_query_free_fingerprint_result(fingerprint_result_);
 }
 
-void QueryLogger::LogQuery(std::string query_string, uint64_t timestamp) {
+void QueryLogger::LogQuery(std::string query_string, uint64_t timestamp,
+                           double latency) {
   auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
   auto *txn = txn_manager.BeginTransaction();
 
@@ -41,8 +42,9 @@ void QueryLogger::LogQuery(std::string query_string, uint64_t timestamp) {
 
   // Log query + fingerprint
   auto &query_history_catalog = catalog::QueryHistoryCatalog::GetInstance();
-  query_history_catalog.InsertQueryHistory(
-      query_string, fingerprint.GetFingerprint(), timestamp, nullptr, txn);
+  query_history_catalog.InsertQueryHistory(query_string,
+                                           fingerprint.GetFingerprint(),
+                                           timestamp, latency, nullptr, txn);
 
   // We're done
   txn_manager.CommitTransaction(txn);

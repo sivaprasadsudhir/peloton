@@ -307,6 +307,8 @@ std::shared_ptr<Statement> TrafficCop::PrepareStatement(
 
   if (settings::SettingsManager::GetBool(settings::SettingId::query_logging)) {
     tcop_txn_state_.top().first->AddQueryString(query_string.c_str());
+    // TODO[Siva]: Correct this to log correct latency
+    tcop_txn_state_.top().first->AddLatency(7.98);
   }
 
   // TODO(Tianyi) Move Statement Planing into Statement's method

@@ -136,12 +136,16 @@ int TransactionLevelGCManager::Unlink(const int &thread_id,
     if (settings::SettingsManager::GetBool(
             settings::SettingId::query_logging)) {
       std::vector<std::string> query_strings = txn_ctx->GetQueryStrings();
+      std::vector<double> latencies = txn_ctx->GetLatencies();
       if(query_strings.size() != 0) {
         uint64_t timestamp = txn_ctx->GetTimestamp();
         auto &pool = threadpool::MonoQueuePool::GetBrainInstance();
-        for(auto query_string: query_strings) {
-          pool.SubmitTask([this, query_string, timestamp] {
-            brain::QueryLogger::LogQuery(query_string, timestamp);
+        PL_ASSERT(query_strings.size() == latencies.size());
+        for(uint i = 0; i < query_strings.size(); i++) {
+          auto query_string = query_strings[i];
+          auto latency = latencies[i];
+          pool.SubmitTask([this, query_string, timestamp, latency] {
+            brain::QueryLogger::LogQuery(query_string, timestamp, latency);
           });        
         }
       }

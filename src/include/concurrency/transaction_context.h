@@ -44,14 +44,14 @@ class TransactionContext : public Printable {
 
  public:
   TransactionContext(const size_t thread_id, const IsolationLevelType isolation,
-              const cid_t &read_id);
+                     const cid_t &read_id);
 
   TransactionContext(const size_t thread_id, const IsolationLevelType isolation,
-              const cid_t &read_id, const cid_t &commit_id);
- 
+                     const cid_t &read_id, const cid_t &commit_id);
+
   TransactionContext(const size_t thread_id, const IsolationLevelType isolation,
-              const cid_t &read_id, const cid_t &commit_id, 
-              const size_t read_write_set_size);
+                     const cid_t &read_id, const cid_t &commit_id,
+                     const size_t read_write_set_size);
 
   ~TransactionContext();
 
@@ -81,17 +81,24 @@ class TransactionContext : public Printable {
 
   inline uint64_t GetTimestamp() const { return timestamp_; }
 
-  inline const std::vector<std::string>& GetQueryStrings() const {
-                                                      return query_strings_; }
+  inline const std::vector<std::string> &GetQueryStrings() const {
+    return query_strings_;
+  }
+
+  inline const std::vector<double> &GetLatencies() const { return latencies_; }
 
   inline void SetCommitId(const cid_t commit_id) { commit_id_ = commit_id; }
 
   inline void SetEpochId(const eid_t epoch_id) { epoch_id_ = epoch_id; }
-  
+
   inline void SetTimestamp(const uint64_t timestamp) { timestamp_ = timestamp; }
 
-  inline void AddQueryString(const char* query_string) {
+  inline void AddQueryString(const char *query_string) {
     query_strings_.push_back(std::string(query_string));
+  }
+
+  inline void AddLatency(const double latency) {
+    latencies_.push_back(latency);
   }
 
   void RecordCreate(oid_t database_oid, oid_t table_oid, oid_t index_oid) {
@@ -183,8 +190,12 @@ class TransactionContext : public Printable {
   eid_t epoch_id_;
 
   // vector of strings to log at the end of the transaction
-  // populated only if the indextuner is running
+  // populated only if the query_logger is running
   std::vector<std::string> query_strings_;
+
+  // vector of strings to log at the end of the transaction
+  // populated only if the query_logger is running
+  std::vector<double> latencies_;
 
   // timestamp when the transaction began
   uint64_t timestamp_;

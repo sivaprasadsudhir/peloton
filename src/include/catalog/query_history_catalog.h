@@ -17,6 +17,7 @@
 // 0: query_string
 // 1: fingerprint
 // 2: timestamp
+// 3: latency
 //
 //===----------------------------------------------------------------------===//
 
@@ -43,13 +44,14 @@ class QueryHistoryCatalog : public AbstractCatalog {
   //===--------------------------------------------------------------------===//
   bool InsertQueryHistory(const std::string &query_string,
                           const std::string &fingerprint, uint64_t timestamp,
-                          type::AbstractPool *pool,
+                          double latency, type::AbstractPool *pool,
                           concurrency::TransactionContext *txn);
 
   enum ColumnId {
     QUERY_STRING = 0,
     FINGERPRINT = 1,
     TIMESTAMP = 2,
+    LATENCY = 3,
   };
 
  private:

@@ -31,14 +31,15 @@ QueryHistoryCatalog::QueryHistoryCatalog(concurrency::TransactionContext *txn)
                       " ("
                       "query_string   VARCHAR NOT NULL, "
                       "fingerprint    VARCHAR NOT NULL, "
-                      "timestamp      TIMESTAMP NOT NULL);",
+                      "timestamp      TIMESTAMP NOT NULL, "
+                      "latency        DECIMAL NOT NULL);",
                       txn) {}
 
 QueryHistoryCatalog::~QueryHistoryCatalog() = default;
 
 bool QueryHistoryCatalog::InsertQueryHistory(
     const std::string &query_string, const std::string &fingerprint,
-    uint64_t timestamp, type::AbstractPool *pool,
+    uint64_t timestamp, double latency, type::AbstractPool *pool,
     concurrency::TransactionContext *txn) {
   std::unique_ptr<storage::Tuple> tuple(
       new storage::Tuple(catalog_table_->GetSchema(), true));
@@ -46,11 +47,13 @@ bool QueryHistoryCatalog::InsertQueryHistory(
   auto val0 = type::ValueFactory::GetVarcharValue(query_string);
   auto val1 = type::ValueFactory::GetVarcharValue(fingerprint);
   auto val2 = type::ValueFactory::GetTimestampValue(timestamp);
+  auto val3 = type::ValueFactory::GetDecimalValue(latency);
 
   tuple->SetValue(ColumnId::QUERY_STRING, val0,
                   pool != nullptr ? pool : &pool_);
   tuple->SetValue(ColumnId::FINGERPRINT, val1, pool != nullptr ? pool : &pool_);
   tuple->SetValue(ColumnId::TIMESTAMP, val2, pool != nullptr ? pool : &pool_);
+  tuple->SetValue(ColumnId::LATENCY, val3, pool != nullptr ? pool : &pool_);
 
   // Insert the tuple
   return InsertTuple(std::move(tuple), txn);
