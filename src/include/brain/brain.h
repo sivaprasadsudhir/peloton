@@ -16,6 +16,9 @@
 #include <cstdio>
 #include <utility>
 #include <functional>
+#include <pqxx/pqxx>
+#include "settings/setting_id.h"
+#include "settings/settings_manager.h"
 #include "capnp/ez-rpc.h"
 #include "peloton/capnp/peloton_service.capnp.h"
 #include "common/notifiable_task.h"
@@ -30,14 +33,37 @@ namespace brain {
  */
 class BrainEnvironment {
  public:
-  BrainEnvironment() { index_selection_knobs = {1, 2, 1}; }
+  BrainEnvironment() :
+      rpc_client_{
+          settings::SettingsManager::GetString(
+              settings::SettingId::peloton_rpc_address)},
+      sql_connection_{
+          settings::SettingsManager::GetString(
+              settings::SettingId::peloton_address)} {
+                  index_selection_knobs = {1, 2, 1}; }
+
   IndexSelectionKnobs GetIndexSelectionKnobs() { return index_selection_knobs; }
+
   void SetIndexSelectionKnobs(IndexSelectionKnobs knobs) {
     index_selection_knobs = knobs;
   }
 
+  inline capnp::EzRpcClient &GetPelotonClient() {
+    return rpc_client_;
+  }
+
+  inline pqxx::result ExecuteQuery(const std::string &query) {
+    pqxx::work w(sql_connection_);
+    pqxx::result result = w.exec(query);
+    w.commit();
+    return result;
+  }
+
  private:
   IndexSelectionKnobs index_selection_knobs;
+  capnp::EzRpcClient rpc_client_;
+  // TODO(tianyu): eventually change this into rpc
+  pqxx::connection sql_connection_;
 };
 
 /**
@@ -94,12 +120,23 @@ class Brain {
   Brain() : scheduler_(0) {}
 
   ~Brain() {
-    for (auto entry : jobs_) delete entry.second;
+    for (auto &entry : jobs_)
+      delete entry.second;
   }
 
-  template <typename BrainJob, typename... Args>
-  inline void RegisterJob(const struct timeval *period, std::string name,
-                          Args... args) {
+  /**
+   * Registers a Job of type BrainJob (given as template parameter) to be run
+   * periodically on Brain.
+   *
+   * @tparam BrainJob The typename of the brain job being submitted, must subclass BrainJob
+   * @tparam Args Arguments to pass to the BrainJob constructor, in addition to BrainEnvironment
+   * @param period The time period between each run of the job
+   * @param name name of the job
+   * @param args arguments to BrainJob constructor
+   */
+  template<typename BrainJob, typename... Args>
+  inline void RegisterJob(const struct timeval *period,
+                          std::string name, Args... args) {
     auto *job = new BrainJob(&env_, args...);
     jobs_[name] = job;
     auto callback = [](int, short, void *arg) {
@@ -109,14 +146,25 @@ class Brain {
         scheduler_.RegisterPeriodicEvent(period, callback, job);
   }
 
+  /**
+   * Executes the main eventloop on the brain. Tasks will begin executing periodically.
+   * Does not return unless there is an exception, or the loop is terminated.
+   */
   inline void Run() { scheduler_.EventLoop(); }
 
+  /**
+   * Terminate the main event loop.
+   */
   inline void Terminate() { scheduler_.ExitLoop(); }
 
  private:
+  // Main Event loop
   NotifiableTask scheduler_;
+  // collection of all the jobs registered
   std::unordered_map<std::string, BrainJob *> jobs_;
+  // mapping of jobs to their event structs (used to trigger the job)
   std::unordered_map<std::string, struct event *> job_handles_;
+  // Shared environment for all the tasks
   BrainEnvironment env_;
 };
 }  // namespace brain

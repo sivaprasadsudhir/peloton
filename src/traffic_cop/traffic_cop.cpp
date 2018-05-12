@@ -22,6 +22,7 @@
 #include "optimizer/optimizer.h"
 #include "planner/plan_util.h"
 #include "settings/settings_manager.h"
+#include "statistics/thread_level_stats_collector.h"
 #include "threadpool/mono_queue_pool.h"
 
 namespace peloton {
@@ -134,6 +135,9 @@ ResultType TrafficCop::AbortQueryHelper() {
 ResultType TrafficCop::ExecuteStatementGetResult() {
   LOG_TRACE("Statement executed. Result: %s",
             ResultTypeToString(p_status_.m_result).c_str());
+
+  stats::ThreadLevelStatsCollector::GetCollectorForThread().CollectQueryEnd();
+
   setRowsAffected(p_status_.m_processed);
   LOG_TRACE("rows_changed %d", p_status_.m_processed);
   is_queuing_ = false;
@@ -189,6 +193,10 @@ executor::ExecutionResult TrafficCop::ExecuteHelper(
     result = std::move(values);
     task_callback_(task_callback_arg_);
   };
+
+  // start timer in tcop before submitting task to worker
+  stats::ThreadLevelStatsCollector::GetCollectorForThread()
+      .CollectQueryBegin();
 
   auto &pool = threadpool::MonoQueuePool::GetInstance();
   pool.SubmitTask([plan, txn, &params, &result_format, on_complete] {
@@ -305,7 +313,8 @@ std::shared_ptr<Statement> TrafficCop::PrepareStatement(
     tcop_txn_state_.emplace(txn, ResultType::SUCCESS);
   }
 
-  if (settings::SettingsManager::GetBool(settings::SettingId::brain)) {
+  if (settings::SettingsManager::GetBool(
+          settings::SettingId::brain_data_collection)) {
     tcop_txn_state_.top().first->AddQueryString(query_string.c_str());
   }
 
@@ -543,19 +552,12 @@ FieldInfo TrafficCop::GetColumnFieldForValueType(std::string column_name,
                          field_size);
 }
 
+// TODO(Tianyi) Further simplify this API
 ResultType TrafficCop::ExecuteStatement(
     const std::shared_ptr<Statement> &statement,
     const std::vector<type::Value> &params, UNUSED_ATTRIBUTE bool unnamed,
-    std::shared_ptr<stats::QueryMetric::QueryParams> param_stats,
     const std::vector<int> &result_format, std::vector<ResultValue> &result,
     size_t thread_id) {
-  // TODO(Tianyi) Further simplify this API
-  if (static_cast<StatsType>(settings::SettingsManager::GetInt(
-          settings::SettingId::stats_mode)) != StatsType::INVALID) {
-    stats::BackendStatsContext::GetInstance()->InitQueryMetric(
-        statement, std::move(param_stats));
-  }
-
   LOG_TRACE("Execute Statement of name: %s",
             statement->GetStatementName().c_str());
   LOG_TRACE("Execute Statement of query: %s",

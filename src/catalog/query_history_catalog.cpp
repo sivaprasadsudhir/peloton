@@ -31,13 +31,17 @@ QueryHistoryCatalog::QueryHistoryCatalog(concurrency::TransactionContext *txn)
                       " ("
                       "query_string   VARCHAR NOT NULL, "
                       "fingerprint    VARCHAR NOT NULL, "
-                      "timestamp      TIMESTAMP NOT NULL);",
-                      txn) {
-  // Secondary index on timestamp
-  Catalog::GetInstance()->CreateIndex(
-      CATALOG_DATABASE_NAME, CATALOG_SCHEMA_NAME, QUERY_HISTORY_CATALOG_NAME,
-      {2}, QUERY_HISTORY_CATALOG_NAME "_skey0", false, IndexType::BWTREE, txn);
-}
+                      "timestamp      BIGINT NOT NULL,"
+                      "PRIMARY KEY(query_string, timestamp));",
+                      txn) {}
+
+//                       "timestamp      TIMESTAMP NOT NULL);",
+//                       txn) {
+//   // Secondary index on timestamp
+//   Catalog::GetInstance()->CreateIndex(
+//       CATALOG_DATABASE_NAME, CATALOG_SCHEMA_NAME, QUERY_HISTORY_CATALOG_NAME,
+//       {2}, QUERY_HISTORY_CATALOG_NAME "_skey0", false, IndexType::BWTREE, txn);
+// }
 
 QueryHistoryCatalog::~QueryHistoryCatalog() = default;
 
@@ -50,7 +54,7 @@ bool QueryHistoryCatalog::InsertQueryHistory(
 
   auto val0 = type::ValueFactory::GetVarcharValue(query_string);
   auto val1 = type::ValueFactory::GetVarcharValue(fingerprint);
-  auto val2 = type::ValueFactory::GetTimestampValue(timestamp);
+  auto val2 = type::ValueFactory::GetBigIntValue(timestamp);
 
   tuple->SetValue(ColumnId::QUERY_STRING, val0,
                   pool != nullptr ? pool : &pool_);
@@ -70,7 +74,7 @@ QueryHistoryCatalog::GetQueryStringsAfterTimestamp(
   oid_t index_offset = IndexId::SECONDARY_KEY_0;  // Secondary key index
 
   std::vector<type::Value> values;
-  values.push_back(type::ValueFactory::GetTimestampValue(
+  values.push_back(type::ValueFactory::GetBigIntValue(
       static_cast<uint64_t>(start_timestamp)));
 
   std::vector<ExpressionType> expr_types(values.size(),
