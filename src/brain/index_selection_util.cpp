@@ -161,6 +161,11 @@ Workload::Workload(std::vector<std::string> &queries, std::string database_name,
   for (auto query : queries) {
     LOG_DEBUG("Query: %s", query.c_str());
 
+    // TODO[Siva]: FOR DEBUGGING PURPOSES - REMOVE FROM 
+    if (query.find("pg_catalog") != std::string::npos) {
+      continue;
+    }
+
     // Create a unique_ptr to free this pointer at the end of this loop
     // iteration.
     auto stmt_list = std::unique_ptr<parser::SQLStatementList>(

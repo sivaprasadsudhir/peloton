@@ -50,6 +50,7 @@ struct IndexSelectionKnobs {
 
 // Class to represent a (hypothetical) index
 struct HypotheticalIndexObject {
+  // TODO[Siva]: Add schema oid as well here
   // the OID of the database
   oid_t db_oid;
   // the OID of the table
