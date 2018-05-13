@@ -21,7 +21,7 @@ namespace brain {
 
 IndexSelection::IndexSelection(Workload &query_set, IndexSelectionKnobs knobs,
                                concurrency::TransactionContext *txn)
-    : query_set_(query_set), context_(knobs), txn_(txn) {}
+    : query_set_(query_set), context_(knobs), txn_(txn), optimizer_calls_(0), memo_hits_(0), max_optimizer_time_(0.0) {}
 
 void IndexSelection::GetBestIndexes(IndexConfiguration &final_indexes) {
   // http://www.vldb.org/conf/1997/P146.PDF
@@ -39,31 +39,38 @@ void IndexSelection::GetBestIndexes(IndexConfiguration &final_indexes) {
 
   // Start the index selection.
   for (unsigned long i = 0; i < context_.knobs_.num_iterations_; i++) {
-    LOG_DEBUG("******* Iteration %ld **********", i);
-    LOG_DEBUG("Candidate Indexes Before: %s",
+    LOG_INFO("******* Iteration %ld **********", i);
+    LOG_INFO("Candidate Indexes Before: %s",
               candidate_indexes.ToString().c_str());
     GenerateCandidateIndexes(candidate_indexes, admissible_indexes, query_set_);
-    LOG_DEBUG("Admissible Indexes: %s", admissible_indexes.ToString().c_str());
-    LOG_DEBUG("Candidate Indexes After: %s",
+    LOG_TRACE("Admissible Indexes: %s", admissible_indexes.ToString().c_str());
+    LOG_INFO("Candidate Indexes After: %s",
               candidate_indexes.ToString().c_str());
 
+    LOG_INFO("Starting enumeration");
     // Configuration Enumeration
     IndexConfiguration top_candidate_indexes;
     Enumerate(candidate_indexes, top_candidate_indexes, query_set_,
               context_.knobs_.num_indexes_);
-    LOG_DEBUG("Top Candidate Indexes: %s",
+    LOG_INFO("Done with enumeration");
+    LOG_TRACE("Top Candidate Indexes: %s",
               candidate_indexes.ToString().c_str());
 
     candidate_indexes = top_candidate_indexes;
 
+    LOG_INFO("Starting MC index gen");
     // Generate multi-column indexes before starting the next iteration.
     // Only do this if there is next iteration.
     if (i < (context_.knobs_.num_iterations_ - 1)) {
       GenerateMultiColumnIndexes(top_candidate_indexes, admissible_indexes,
                                  candidate_indexes);
     }
+    LOG_INFO("Done with MC index gen");
+    LOG_INFO("******* Iteration DONE **********");
   }
-
+  LOG_INFO("Max optimizer time: %lf", max_optimizer_time_);
+  LOG_INFO("Num optimizer calls: %lu", optimizer_calls_);
+  LOG_INFO("Num memo hits: %lu", memo_hits_);
   final_indexes = candidate_indexes;
 }
 
@@ -86,9 +93,9 @@ void IndexSelection::GenerateCandidateIndexes(
       // candidates for each query.
       candidate_config.Merge(pruned_ai);
     }
-    LOG_DEBUG("Single column candidate indexes: %lu", candidate_config.GetIndexCount());
+    LOG_TRACE("Single column candidate indexes: %lu", candidate_config.GetIndexCount());
   } else {
-    LOG_DEBUG("Pruning multi-column indexes");
+    LOG_TRACE("Pruning multi-column indexes");
     IndexConfiguration pruned_ai;
     PruneUselessIndexes(candidate_config, workload, pruned_ai);
     candidate_config.Set(pruned_ai);
@@ -112,8 +119,8 @@ void IndexSelection::PruneUselessIndexes(IndexConfiguration &config,
 
       auto c1 = ComputeCost(c, w);
       auto c2 = ComputeCost(empty_config, w);
-      LOG_DEBUG("Cost with index %s is %lf", c.ToString().c_str(), c1);
-      LOG_DEBUG("Cost without is %lf", c2);
+      LOG_TRACE("Cost with index %s is %lf", c.ToString().c_str(), c1);
+      LOG_TRACE("Cost without is %lf", c2);
 
       if (c1 < c2) {
         is_useful = true;
@@ -152,11 +159,11 @@ void IndexSelection::GreedySearch(IndexConfiguration &indexes,
   // 3. If Cost (S U {I}) >= Cost(S) then exit
   // Else S = S U {I}
   // 4. If |S| = k then exit
-  LOG_DEBUG("GREEDY: Starting with the following index: %s",
+  LOG_TRACE("GREEDY: Starting with the following index: %s",
            indexes.ToString().c_str());
   size_t current_index_count = indexes.GetIndexCount();
 
-  LOG_DEBUG("GREEDY: At start: #indexes chosen : %zu, #num_indexes: %zu",
+  LOG_TRACE("GREEDY: At start: #indexes chosen : %zu, #num_indexes: %zu",
            current_index_count, k);
 
   if (current_index_count >= k) return;
@@ -174,7 +181,7 @@ void IndexSelection::GreedySearch(IndexConfiguration &indexes,
       new_indexes = indexes;
       new_indexes.AddIndexObject(index);
       cur_cost = ComputeCost(new_indexes, workload);
-      LOG_DEBUG("GREEDY: Considering this index: %s \n with cost: %lf",
+      LOG_TRACE("GREEDY: Considering this index: %s \n with cost: %lf",
                index->ToString().c_str(), cur_cost);
       if (cur_cost < cur_min_cost || (best_index != nullptr &&
           cur_cost == cur_min_cost &&
@@ -186,7 +193,7 @@ void IndexSelection::GreedySearch(IndexConfiguration &indexes,
 
     // if we found a better configuration
     if (cur_min_cost < global_min_cost) {
-      LOG_DEBUG("GREEDY: Adding the following index: %s",
+      LOG_TRACE("GREEDY: Adding the following index: %s",
                best_index->ToString().c_str());
       indexes.AddIndexObject(best_index);
       remaining_indexes.RemoveIndexObject(best_index);
@@ -195,12 +202,12 @@ void IndexSelection::GreedySearch(IndexConfiguration &indexes,
 
       // we are done with all remaining indexes
       if (remaining_indexes.GetIndexCount() == 0) {
-        LOG_DEBUG("GREEDY: Breaking because nothing more");
+        LOG_TRACE("GREEDY: Breaking because nothing more");
         break;
       }
     } else {  // we did not find any better index to add to our current
               // configuration
-      LOG_DEBUG("GREEDY: Breaking because nothing better found");
+      LOG_TRACE("GREEDY: Breaking because nothing better found");
       break;
     }
   }
@@ -258,7 +265,7 @@ void IndexSelection::ExhaustiveEnumeration(IndexConfiguration &indexes,
   result_index_config.erase({empty, cost_empty});
 
   for (auto index : result_index_config) {
-    LOG_DEBUG("EXHAUSTIVE: Index: %s, Cost: %lf", index.first.ToString().c_str(),
+    LOG_TRACE("EXHAUSTIVE: Index: %s, Cost: %lf", index.first.ToString().c_str(),
              index.second);
   }
 
@@ -317,7 +324,7 @@ void IndexSelection::GetAdmissibleIndexes(
       break;
     }
 
-    default: { LOG_DEBUG("DDL Statement encountered, Ignoring.."); }
+    default: { LOG_TRACE("DDL Statement encountered, Ignoring.."); }
   }
 }
 
@@ -325,7 +332,7 @@ void IndexSelection::IndexColsParseWhereHelper(
     const expression::AbstractExpression *where_expr,
     IndexConfiguration &config) {
   if (where_expr == nullptr) {
-    LOG_DEBUG("No Where Clause Found");
+    LOG_TRACE("No Where Clause Found");
     return;
   }
   auto expr_type = where_expr->GetExpressionType();
@@ -396,7 +403,7 @@ void IndexSelection::IndexColsParseGroupByHelper(
     std::unique_ptr<parser::GroupByDescription> &group_expr,
     IndexConfiguration &config) {
   if ((group_expr == nullptr) || (group_expr->columns.size() == 0)) {
-    LOG_DEBUG("Group by expression not present");
+    LOG_TRACE("Group by expression not present");
     return;
   }
   auto &columns = group_expr->columns;
@@ -411,7 +418,7 @@ void IndexSelection::IndexColsParseOrderByHelper(
     std::unique_ptr<parser::OrderDescription> &order_expr,
     IndexConfiguration &config) {
   if ((order_expr == nullptr) || (order_expr->exprs.size() == 0)) {
-    LOG_DEBUG("Order by expression not present");
+    LOG_TRACE("Order by expression not present");
     return;
   }
   auto &exprs = order_expr->exprs;
@@ -447,11 +454,18 @@ double IndexSelection::ComputeCost(IndexConfiguration &config,
                                                                    query.get()};
     if (context_.memo_.find(state) != context_.memo_.end()) {
       cost += context_.memo_[state];
+      memo_hits_++;
     } else {
+      auto start = std::clock();
       auto result = WhatIfIndex::GetCostAndBestPlanTree(
           query, config, workload.GetDatabaseName(), txn_);
+      auto end = std::clock();
+      if ((end - start) > max_optimizer_time_) {
+        max_optimizer_time_ = (end - start);
+      }
       context_.memo_[state] = result->cost;
       cost += result->cost;
+      optimizer_calls_++;
     }
   }
   return cost;

@@ -22,10 +22,6 @@
 #include "network/marshal.h"
 #include "network/postgres_protocol_handler.h"
 #include "network/peloton_server.h"
-#include "parser/postgresparser.h"
-#include "parser/statements.h"
-#include "planner/abstract_plan.h"
-#include "planner/delete_plan.h"
 #include "planner/insert_plan.h"
 #include "planner/plan_util.h"
 #include "planner/update_plan.h"
@@ -33,6 +29,9 @@
 #include "type/value.h"
 #include "type/value_factory.h"
 #include "util/string_util.h"
+#include "settings/settings_manager.h"
+
+#include "optimizer/optimizer.h"
 
 #define SSL_MESSAGE_VERNO 80877103
 #define PROTO_MAJOR_VERSION(x) (x >> 16)
@@ -188,6 +187,24 @@ ProcessResult PostgresProtocolHandler::ExecQueryMessage(
       std::string stmt_name = exec_stmt->name;
 
       auto cached_statement = statement_cache_.GetStatement(stmt_name);
+      auto plan = cached_statement->GetPlanTree();
+
+      // TODO: Instrumentation code -- Remove in the final
+      // ---------
+      optimizer::Optimizer::global_cost_map_mutex.lock();
+      auto &map = optimizer::Optimizer::global_cost_map;
+      if (map.find(plan.get()) != map.end()) {
+        optimizer::Optimizer::aggregate_query_cost.fetch_add(map[plan.get()]);
+      }
+      optimizer::Optimizer::global_cost_map_mutex.unlock();
+      optimizer::Optimizer::optimizer_calls.fetch_add(1);
+      if ((optimizer::Optimizer::optimizer_calls.load() % 10) == 0) {
+        LOG_INFO("Optimizer calls: %llu", optimizer::Optimizer::optimizer_calls.load());
+        LOG_INFO("Query cost so far: %llu", optimizer::Optimizer::aggregate_query_cost.load());
+      }
+      // ---------
+
+
       if (cached_statement.get() != nullptr) {
         traffic_cop_->SetStatement(cached_statement);
       }

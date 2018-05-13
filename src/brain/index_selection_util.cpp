@@ -159,7 +159,21 @@ Workload::Workload(std::vector<std::string> &queries, std::string database_name,
 
   // Parse and bind every query. Store the results in the workload vector.
   for (auto query : queries) {
-    LOG_DEBUG("Query: %s", query.c_str());
+    // LOG_DEBUG("Query: %s", query.c_str());
+
+    // TODO: Remove this.
+    // Hack to filter out pg_catalog queries.
+    if (query.find("pg_") != std::string::npos) {
+      continue;
+    }
+
+    // Check the query cache. If it is already present,
+    // we don't need to parse and bind it again.
+    auto cached_stmt = sql_query_cache.find(query);
+    if (cached_stmt != sql_query_cache.end()) {
+      AddQuery(cached_stmt->second);
+      continue;
+    }
 
     // TODO[Siva]: FOR DEBUGGING PURPOSES - REMOVE FROM 
     if (query.find("pg_catalog") != std::string::npos) {
@@ -182,8 +196,13 @@ Workload::Workload(std::vector<std::string> &queries, std::string database_name,
     auto stmt_shared = std::shared_ptr<parser::SQLStatement>(stmt.release());
     PELOTON_ASSERT(stmt_shared->GetType() != StatementType::INVALID);
 
-    // Bind the query
-    binder->BindNameToNode(stmt_shared.get());
+    try {
+      // Bind the query
+      binder->BindNameToNode(stmt_shared.get());
+    } catch (Exception e) {
+      LOG_DEBUG("Cannot bind this query");
+      continue;
+    }
 
     // Only take the DML queries from the workload
     switch (stmt_shared->GetType()) {
@@ -192,6 +211,7 @@ Workload::Workload(std::vector<std::string> &queries, std::string database_name,
       case StatementType::UPDATE:
       case StatementType::SELECT:
         AddQuery(stmt_shared);
+        sql_query_cache[query] = stmt_shared;
       default:
         // Ignore other queries.
         LOG_TRACE("Ignoring query: %s", stmt->GetInfo().c_str());

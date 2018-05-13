@@ -56,7 +56,7 @@ int RunPelotonBrain() {
   auto catalog = peloton::catalog::Catalog::GetInstance();
   catalog->Bootstrap();
   peloton::settings::SettingsManager::GetInstance().InitializeCatalog();
-  
+
   // TODO(tianyu): register jobs here
   struct timeval one_minute;
   one_minute.tv_sec = 10;

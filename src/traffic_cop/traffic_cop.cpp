@@ -175,12 +175,12 @@ executor::ExecutionResult TrafficCop::ExecuteHelper(
     stats::ThreadLevelStatsCollector::GetCollectorForThread().CollectTransactionBegin(
         txn);
   }
-  
+
   if (settings::SettingsManager::GetBool(
           settings::SettingId::brain_data_collection)) {
     tcop_txn_state_.top().first->AddQueryString(
         statement_->GetQueryString().c_str());
-  }    
+  }
 
   // skip if already aborted
   if (curr_state.second == ResultType::ABORTED) {

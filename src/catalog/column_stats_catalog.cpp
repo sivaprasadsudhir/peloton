@@ -251,6 +251,8 @@ ColumnStatsCatalog *ColumnStatsCatalog::GetInstance(
   return &column_stats_catalog;
 }
 
+// TODO [VAMSHI]: Removing the NOT NULL contraints for benchmark results.
+// Enable it later
 ColumnStatsCatalog::ColumnStatsCatalog(concurrency::TransactionContext *txn)
     : AbstractCatalog("CREATE TABLE " CATALOG_DATABASE_NAME
                       "." CATALOG_SCHEMA_NAME "." COLUMN_STATS_CATALOG_NAME

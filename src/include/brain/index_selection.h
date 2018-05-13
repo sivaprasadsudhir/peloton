@@ -222,6 +222,12 @@ class IndexSelection {
   IndexSelectionContext context_;
   // Transaction.
   concurrency::TransactionContext *txn_;
+  // Number of optimizer calls.
+  long optimizer_calls_;
+  // Number of optimizer calls.
+  long memo_hits_;
+  // Max optimizer time.
+  double max_optimizer_time_;
 };
 
 }  // namespace brain
