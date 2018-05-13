@@ -172,6 +172,9 @@ bool SeqScanExecutor::DExecute() {
           // if the tuple is visible, then perform predicate evaluation.
           if (predicate_ == nullptr) {
             position_list.push_back(tuple_id);
+            auto tile_group_id = tile_group->GetTileGroupId();
+            stats::ThreadLevelStatsCollector::GetCollectorForThread()
+                .CollectTupleRead(current_txn, tile_group_id);
             auto res = transaction_manager.PerformRead(current_txn, location,
                                                        acquire_owner);
             if (!res) {
@@ -186,6 +189,10 @@ bool SeqScanExecutor::DExecute() {
             auto eval =
                 predicate_->Evaluate(&tuple, nullptr, executor_context_);
             LOG_TRACE("Evaluation result: %s", eval.GetInfo().c_str());
+            // Increment table read op stats
+            auto tile_group_id = tile_group->GetTileGroupId();
+            stats::ThreadLevelStatsCollector::GetCollectorForThread()
+                .CollectTupleRead(current_txn, tile_group_id);
             if (eval.IsTrue()) {
               position_list.push_back(tuple_id);
               auto res = transaction_manager.PerformRead(current_txn, location,

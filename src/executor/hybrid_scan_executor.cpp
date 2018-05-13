@@ -228,6 +228,9 @@ bool HybridScanExecutor::SeqScanUtil() {
         ContainerTuple<storage::TileGroup> tuple(tile_group.get(), tuple_id);
         auto eval =
             predicate_->Evaluate(&tuple, nullptr, executor_context_).IsTrue();
+        auto tile_group_id = tile_group->GetTileGroupId();
+        stats::ThreadLevelStatsCollector::GetCollectorForThread()
+            .CollectTupleRead(current_txn, tile_group_id);
         if (eval == true) {
           position_list.push_back(tuple_id);
           auto res = transaction_manager.PerformRead(current_txn, location,
@@ -389,6 +392,9 @@ bool HybridScanExecutor::ExecPrimaryIndexLookup() {
 
       if (visibility == VisibilityType::OK) {
         visible_tuples[tuple_location.block].push_back(tuple_location.offset);
+        auto tile_group_id = tile_group->GetTileGroupId();
+        stats::ThreadLevelStatsCollector::GetCollectorForThread()
+            .CollectTupleRead(current_txn, tile_group_id);
         auto res = transaction_manager.PerformRead(current_txn, tuple_location,
                                                    acquire_owner);
         if (!res) {

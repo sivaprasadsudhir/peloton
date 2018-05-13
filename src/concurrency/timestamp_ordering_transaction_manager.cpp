@@ -239,9 +239,7 @@ bool TimestampOrderingTransactionManager::PerformRead(
 
       current_txn->RecordRead(location);
 
-      // Increment table read op stats
-      stats::ThreadLevelStatsCollector::GetCollectorForThread()
-          .CollectTupleRead(current_txn, tile_group_id);
+
       return true;
     }
 

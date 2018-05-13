@@ -21,6 +21,7 @@
 #include "executor/executor_context.h"
 #include "executor/logical_tile.h"
 #include "executor/logical_tile_factory.h"
+#include "statistics/thread_level_stats_collector.h"
 #include "expression/abstract_expression.h"
 #include "index/index.h"
 #include "planner/index_scan_plan.h"
@@ -251,6 +252,10 @@ bool IndexScanExecutor::ExecPrimaryIndexLookup() {
           eval =
               predicate_->Evaluate(&tuple, nullptr, executor_context_).IsTrue();
         }
+        auto tile_group_id = tile_group->GetTileGroupId();
+        stats::ThreadLevelStatsCollector::GetCollectorForThread()
+            .CollectTupleRead(current_txn, tile_group_id);
+        
         // if passed evaluation, then perform write.
         if (eval == true) {
           LOG_TRACE("perform read operation");
@@ -517,6 +522,11 @@ bool IndexScanExecutor::ExecSecondaryIndexLookup() {
               predicate_->Evaluate(&candidate_tuple, nullptr, executor_context_)
                   .IsTrue();
         }
+
+        auto tile_group_id = tile_group->GetTileGroupId();
+        stats::ThreadLevelStatsCollector::GetCollectorForThread()
+            .CollectTupleRead(current_txn, tile_group_id);
+
         // if passed evaluation, then perform write.
         if (eval == true) {
           auto res = transaction_manager.PerformRead(

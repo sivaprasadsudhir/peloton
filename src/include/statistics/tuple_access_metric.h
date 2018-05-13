@@ -24,7 +24,7 @@ class TupleAccessRawData: public AbstractRawData {
  public:
   inline void LogTupleRead(txn_id_t tid) {
     static std::atomic<unsigned long long> num_reads(0);
-    static unsigned long long threshold = 1000;
+    static unsigned long long threshold = 100000;
 
     num_reads.fetch_add(1);
 
