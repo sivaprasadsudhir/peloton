@@ -24,11 +24,11 @@ WhatIfIndex::GetCostAndBestPlanTree(std::shared_ptr<parser::SQLStatement> query,
                                     IndexConfiguration &config,
                                     std::string database_name,
                                     concurrency::TransactionContext *txn) {
-  LOG_DEBUG("***** GetCostAndBestPlanTree **** \n");
+  LOG_TRACE("***** GetCostAndBestPlanTree **** \n");
   // Find all the tables that are referenced in the parsed query.
   std::unordered_set<std::string> tables_used;
   GetTablesReferenced(query, tables_used);
-  LOG_DEBUG("Tables referenced count: %ld", tables_used.size());
+  LOG_TRACE("Tables referenced count: %ld", tables_used.size());
   PELOTON_ASSERT(tables_used.size() > 0);
 
   // TODO [vamshi]: Improve this loop.
@@ -56,12 +56,12 @@ WhatIfIndex::GetCostAndBestPlanTree(std::shared_ptr<parser::SQLStatement> query,
       if (index->table_oid == table_object->GetTableOid()) {
         auto index_catalog_obj = CreateIndexCatalogObject(index.get());
         table_object->InsertIndexObject(index_catalog_obj);
-        LOG_DEBUG("Created a new hypothetical index %d on table: %d",
+        LOG_TRACE("Created a new hypothetical index %d on table: %d",
                   index_catalog_obj->GetIndexOid(),
                   index_catalog_obj->GetTableOid());
         for (auto col : index_catalog_obj->GetKeyAttrs()) {
           (void)col;  // for debug mode.
-          LOG_DEBUG("Cols: %d", col);
+          LOG_TRACE("Cols: %d", col);
         }
       }
     }
@@ -71,10 +71,10 @@ WhatIfIndex::GetCostAndBestPlanTree(std::shared_ptr<parser::SQLStatement> query,
   optimizer::Optimizer optimizer;
   auto opt_info_obj = optimizer.GetOptimizedPlanInfo(query, txn);
 
-  LOG_DEBUG("Query: %s", query->GetInfo().c_str());
-  LOG_DEBUG("Hypothetical config: %s", config.ToString().c_str());
-  LOG_DEBUG("Got cost %lf", opt_info_obj->cost);
-  LOG_DEBUG("Plan type: %s", opt_info_obj->plan->GetInfo().c_str());
+  LOG_TRACE("Query: %s", query->GetInfo().c_str());
+  LOG_TRACE("Hypothetical config: %s", config.ToString().c_str());
+  LOG_TRACE("Got cost %lf", opt_info_obj->cost);
+  LOG_TRACE("Plan type: %s", opt_info_obj->plan->GetInfo().c_str());
   return opt_info_obj;
 }
 
@@ -109,7 +109,7 @@ void WhatIfIndex::GetTablesReferenced(
       switch (sql_statement->from_table->type) {
         case TableReferenceType::NAME: {
           // Single table.
-          LOG_DEBUG("Table name is %s",
+          LOG_TRACE("Table name is %s",
                     sql_statement->from_table.get()->GetTableName().c_str());
           table_names.insert(sql_statement->from_table.get()->GetTableName());
           break;

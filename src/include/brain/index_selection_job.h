@@ -29,6 +29,8 @@ class IndexSelectionJob : public BrainJob {
    */
   void OnJobInvocation(BrainEnvironment *env);
 
+  static bool is_running;
+
  private:
   /**
    * Go through the queries and return the timestamp of the latest query.

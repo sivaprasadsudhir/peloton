@@ -270,6 +270,7 @@ class Workload {
 
  private:
   std::vector<std::shared_ptr<parser::SQLStatement>> sql_queries_;
+  std::map<std::string, std::shared_ptr<parser::SQLStatement>> sql_query_cache;
   std::string database_name;
 };
 

@@ -22,22 +22,17 @@ namespace brain {
 
 #define BRAIN_SUGGESTED_INDEX_MAGIC_STR "brain_suggested_index"
 
+bool IndexSelectionJob::is_running = false;
+
 void IndexSelectionJob::OnJobInvocation(BrainEnvironment *env) {
+
+  if (!is_running) {
+    return;
+  }
+
   auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
   auto txn = txn_manager.BeginTransaction();
   LOG_INFO("Started Index Suggestion Task");
-
-  optimizer::StatsStorage *stats_storage =
-    optimizer::StatsStorage::GetInstance();
-
-  ResultType stats_result = stats_storage->AnalyzeStatsForAllTables(txn);
-  if (stats_result != ResultType::SUCCESS) {
-    LOG_ERROR(
-      "Cannot generate stats for table columns. Not performing index "
-        "suggestion...");
-    txn_manager.AbortTransaction(txn);
-    return;
-  }
 
   // Query the catalog for new SQL queries.
   // New SQL queries are the queries that were added to the system
@@ -60,6 +55,7 @@ void IndexSelectionJob::OnJobInvocation(BrainEnvironment *env) {
     LOG_INFO("Knob Naive: %zu", env->GetIndexSelectionKnobs().naive_enumeration_threshold_);
     LOG_INFO("Knob Num Iterations: %zu", env->GetIndexSelectionKnobs().num_iterations_);
     brain::IndexSelection is = {workload, env->GetIndexSelectionKnobs(), txn};
+    LOG_INFO("Workload created");
     brain::IndexConfiguration best_config;
     is.GetBestIndexes(best_config);
 
@@ -112,6 +108,8 @@ void IndexSelectionJob::OnJobInvocation(BrainEnvironment *env) {
     LOG_INFO("Tuning - not this time");
   }
   txn_manager.CommitTransaction(txn);
+
+  is_running = false;
 }
 
 void IndexSelectionJob::CreateIndexRPC(brain::HypotheticalIndexObject *index) {

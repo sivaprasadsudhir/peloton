@@ -72,6 +72,13 @@ class Optimizer : public AbstractOptimizer {
       OptimizerRuleTests_SimpleAssociativeRuleTest2_Test;
 
  public:
+  // TODO:
+  // Some metrics added for generating graphs.
+  static std::atomic<unsigned long long> aggregate_query_cost;
+  static std::atomic<unsigned long long> optimizer_calls;
+  static std::unordered_map<planner::AbstractPlan*, long long> global_cost_map;
+  static std::mutex global_cost_map_mutex;
+
   Optimizer(const Optimizer &) = delete;
   Optimizer &operator=(const Optimizer &) = delete;
   Optimizer(Optimizer &&) = delete;

@@ -19,6 +19,8 @@
 #include "executor/executor_context.h"
 #include "planner/create_function_plan.h"
 #include "udf/udf_handler.h"
+#include "optimizer/stats/stats_storage.h"
+#include "brain/index_selection_job.h"
 
 namespace peloton {
 namespace executor {
@@ -44,6 +46,21 @@ bool CreateFunctionExecutor::DExecute() {
   const planner::CreateFunctionPlan &node =
       GetPlanNode<planner::CreateFunctionPlan>();
   auto current_txn = context->GetTransaction();
+
+
+  // TODO: HACK: Remove: Analyze table column stats
+  optimizer::StatsStorage *stats_storage =
+    optimizer::StatsStorage::GetInstance();
+
+  ResultType stats_result = stats_storage->AnalyzeStatsForAllTables(current_txn);
+  if (stats_result != ResultType::SUCCESS) {
+    LOG_ERROR(
+      "Cannot generate stats for table columns. Not performing index "
+        "suggestion...");
+  }
+
+  // TODO: HACK: Now run the brain job.
+  brain::IndexSelectionJob::is_running = true;
 
   auto proname = node.GetFunctionName();
   oid_t prolang = catalog::LanguageCatalog::GetInstance()

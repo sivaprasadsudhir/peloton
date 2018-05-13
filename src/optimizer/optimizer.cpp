@@ -55,6 +55,12 @@ using std::make_shared;
 namespace peloton {
 namespace optimizer {
 
+// Initailize metrics.
+std::atomic<unsigned long long> Optimizer::aggregate_query_cost(0);
+std::atomic<unsigned long long> Optimizer::optimizer_calls(0);
+std::unordered_map<planner::AbstractPlan*, long long> Optimizer::global_cost_map;
+std::mutex Optimizer::global_cost_map_mutex;
+
 //===--------------------------------------------------------------------===//
 // Optimizer
 //===--------------------------------------------------------------------===//
@@ -127,6 +133,27 @@ shared_ptr<planner::AbstractPlan> Optimizer::BuildPelotonPlanTree(
     auto best_plan = ChooseBestPlan(root_id, query_info.physical_props,
                                     query_info.output_exprs);
     if (best_plan == nullptr) return nullptr;
+
+    // TODO: Remove this.
+    // Get the cost.
+    auto group = GetMetadata().memo.GetGroupByID(root_id);
+    auto best_expr = group->GetBestExpression(query_info.physical_props);
+    auto cost = best_expr->GetCost(query_info.physical_props);
+
+    // Put the cost into the global map.
+    // ---------
+    Optimizer::global_cost_map_mutex.lock();
+    Optimizer::global_cost_map[best_plan.get()] = cost * 100000;
+    Optimizer::global_cost_map_mutex.unlock();
+    Optimizer::aggregate_query_cost.fetch_add(cost * 100000);
+    Optimizer::optimizer_calls.fetch_add(1);
+    // ---------
+
+    if ((optimizer_calls.load() % 10) == 0) {
+      LOG_INFO("Optimizer calls: %llu", optimizer_calls.load());
+      LOG_INFO("Query cost so far: %llu", aggregate_query_cost.load());
+    }
+
     // Reset memo after finishing the optimization
     Reset();
     //  return shared_ptr<planner::AbstractPlan>(best_plan.release());

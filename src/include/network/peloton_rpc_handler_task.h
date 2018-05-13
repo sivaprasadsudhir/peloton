@@ -56,15 +56,17 @@ class PelotonRpcServerImpl final : public PelotonService::Server {
     auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
     auto txn = txn_manager.BeginTransaction();
 
+    LOG_DEBUG("Executing Drop Index Query: %ld", index_oid);
     // Drop index. Fail if it doesn't exist.
     auto catalog = catalog::Catalog::GetInstance();
     try {
       catalog->DropIndex(database_oid, index_oid, txn);
     } catch (CatalogException e) {
-      LOG_ERROR("Drop Index Failed");
+      LOG_INFO("Drop Index Failed");
       txn_manager.AbortTransaction(txn);
       return kj::NEVER_DONE;
     }
+    LOG_INFO("Drop Index done");
     txn_manager.CommitTransaction(txn);
     return kj::READY_NOW;
   }
