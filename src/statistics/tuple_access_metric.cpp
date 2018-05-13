@@ -13,7 +13,7 @@
 #include "catalog/catalog.h"
 #include "concurrency/transaction_manager_factory.h"
 #include "statistics/tuple_access_metric.h"
-#include "catalog/tuple_access_catalog.h"
+#include "catalog/tuple_access_metrics_catalog.h"
 
 namespace peloton {
 namespace stats {
@@ -37,7 +37,8 @@ void TupleAccessRawData::WriteToCatalog(txn_id_t tid,
                                  commit,
                                  txn);
 }
-void TupleAccessRawData::WriteToCatalog() {
+
+void TupleAccessRawData::UpdateAndPersist() {
   auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
   auto txn = txn_manager.BeginTransaction();
 

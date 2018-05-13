@@ -10,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "catalog/tuple_access_catalog.h"
+#include "catalog/tuple_access_metrics_catalog.h"
 
 #include <vector>
 #include "executor/logical_tile.h"

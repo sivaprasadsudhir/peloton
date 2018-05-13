@@ -62,7 +62,7 @@ void TableMetricRawData::Aggregate(AbstractRawData &other) {
   }
 }
 
-void TableMetricRawData::FetchData() {
+void TableMetricRawData::FetchMemoryStats() {
   auto &tile_group_manager = catalog::Manager::GetInstance();
   auto pg_catalog = catalog::Catalog::GetInstance();
   auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
@@ -107,7 +107,9 @@ void TableMetricRawData::FetchData() {
   }
 }
 
-void TableMetricRawData::WriteToCatalog() {
+void TableMetricRawData::UpdateAndPersist() {
+  FetchMemoryStats();
+
   auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
   auto txn = txn_manager.BeginTransaction();
   auto time_since_epoch = std::chrono::system_clock::now().time_since_epoch();
@@ -131,7 +133,8 @@ void TableMetricRawData::WriteToCatalog() {
       table_metrics_catalog->InsertTableMetrics(
           table_oid, counts[READ], counts[UPDATE], counts[INSERT],
           counts[DELETE], counts[INLINE_MEMORY_ALLOC],
-          counts[INLINE_MEMORY_USAGE], time_stamp, nullptr, txn);
+          counts[INLINE_MEMORY_USAGE], counts[VARLEN_MEMORY_ALLOC],
+          counts[VARLEN_MEMORY_USAGE], time_stamp, nullptr, txn);
     } else {
       // update existing entry
       table_metrics_catalog->UpdateTableMetrics(
@@ -139,11 +142,9 @@ void TableMetricRawData::WriteToCatalog() {
           old_metric->GetUpdates() + counts[UPDATE],
           old_metric->GetInserts() + counts[INSERT],
           old_metric->GetDeletes() + counts[DELETE],
-          old_metric->GetMemoryAlloc() + counts[INLINE_MEMORY_ALLOC],
-          counts[INLINE_MEMORY_USAGE] +
-              counts[VARLEN_MEMORY_USAGE],  // memory usage is not a delta
-          time_stamp,
-          txn);
+          old_metric->GetInlineMemoryAlloc() + counts[INLINE_MEMORY_ALLOC],
+          counts[INLINE_MEMORY_USAGE], counts[VARLEN_MEMORY_ALLOC],
+          counts[VARLEN_MEMORY_USAGE], time_stamp, txn);
     }
   }
 
