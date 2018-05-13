@@ -15,6 +15,7 @@
 #include "statistics/stats_event_type.h"
 #include "statistics/table_metric.h"
 #include "statistics/test_metric.h"
+#include "statistics/tuple_access_metric.h"
 
 namespace peloton {
 namespace stats {
@@ -41,6 +42,11 @@ ThreadLevelStatsCollector::ThreadLevelStatsCollector() {
     RegisterMetric<DatabaseMetric>({StatsEventType::TXN_BEGIN,
                                     StatsEventType::TXN_COMMIT,
                                     StatsEventType::TXN_ABORT});
+
+    RegisterMetric<TupleAccessMetric>({StatsEventType::TUPLE_READ,
+                                    StatsEventType::TXN_COMMIT,
+                                    StatsEventType::TXN_ABORT});
+
   } else if (stats_mode == StatsModeType::TEST)
     RegisterMetric<TestMetric>({StatsEventType::TEST});
 }

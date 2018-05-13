@@ -96,6 +96,12 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;  // TODO: Use an enum with exit error codes
   }
 
+  peloton::settings::SettingsManager::SetInt(
+      peloton::settings::SettingId::stats_mode, 1);
+
+  peloton::settings::SettingsManager::SetBool(
+      peloton::settings::SettingId::brain_data_collection, true);
+
   int exit_code = 0;
   if (peloton::settings::SettingsManager::GetBool(
           peloton::settings::SettingId::brain))

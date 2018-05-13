@@ -170,7 +170,14 @@ executor::ExecutionResult TrafficCop::ExecuteHelper(
     single_statement_txn_ = true;
     txn = txn_manager.BeginTransaction(thread_id);
     tcop_txn_state_.emplace(txn, ResultType::SUCCESS);
+
   }
+  
+  if (settings::SettingsManager::GetBool(
+          settings::SettingId::brain_data_collection)) {
+    tcop_txn_state_.top().first->AddQueryString(
+        statement_->GetQueryString().c_str());
+  }    
 
   // skip if already aborted
   if (curr_state.second == ResultType::ABORTED) {
@@ -313,10 +320,10 @@ std::shared_ptr<Statement> TrafficCop::PrepareStatement(
     tcop_txn_state_.emplace(txn, ResultType::SUCCESS);
   }
 
-  if (settings::SettingsManager::GetBool(
-          settings::SettingId::brain_data_collection)) {
-    tcop_txn_state_.top().first->AddQueryString(query_string.c_str());
-  }
+  // if (settings::SettingsManager::GetBool(
+  //         settings::SettingId::brain_data_collection)) {
+  //   tcop_txn_state_.top().first->AddQueryString(query_string.c_str());
+  // }
 
   // TODO(Tianyi) Move Statement Planing into Statement's method
   // to increase coherence
