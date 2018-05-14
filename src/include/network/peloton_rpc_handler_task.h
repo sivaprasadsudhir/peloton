@@ -59,16 +59,18 @@ class PelotonRpcServerImpl final : public PelotonService::Server {
     auto txn = txn_manager.BeginTransaction();
 
     LOG_DEBUG("Executing Drop Index Query: %d", index_oid);
+    (void)index_oid;
+    (void)database_oid;
     // Drop index. Fail if it doesn't exist.
-    auto catalog = catalog::Catalog::GetInstance();
-    try {
-      catalog->DropIndex(database_oid, index_oid, txn);
-    } catch (CatalogException e) {
-      LOG_INFO("Drop Index Failed");
-      txn_manager.AbortTransaction(txn);
-      return kj::NEVER_DONE;
-    }
-    LOG_INFO("Drop Index done");
+//    auto catalog = catalog::Catalog::GetInstance();
+//    try {
+//      catalog->DropIndex(database_oid, index_oid, txn);
+//    } catch (CatalogException e) {
+//      LOG_INFO("Drop Index Failed");
+//      txn_manager.AbortTransaction(txn);
+//      return kj::NEVER_DONE;
+//    }
+//    LOG_INFO("Drop Index done");
     txn_manager.CommitTransaction(txn);
     return kj::READY_NOW;
   }
@@ -134,17 +136,17 @@ class PelotonRpcServerImpl final : public PelotonService::Server {
     }
     oss << ")";
 
-    LOG_DEBUG("Executing Create Index Query: %s", oss.str().c_str());
+    LOG_INFO("Executing Create Index Query: %s", oss.str().c_str());
 
     // Execute the SQL query
-    std::vector<ResultValue> result;
-    std::vector<FieldInfo> tuple_descriptor;
-    std::string error_message;
-    int rows_affected;
-
-    ExecuteSQLQuery(oss.str(), result, tuple_descriptor, rows_affected,
-                    error_message);
-    LOG_INFO("Execute query done");
+//    std::vector<ResultValue> result;
+//    std::vector<FieldInfo> tuple_descriptor;
+//    std::string error_message;
+//    int rows_affected;
+//
+//    ExecuteSQLQuery(oss.str(), result, tuple_descriptor, rows_affected,
+//                    error_message);
+//    LOG_INFO("Execute query done");
 
     return kj::READY_NOW;
   }
