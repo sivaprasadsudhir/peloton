@@ -146,13 +146,7 @@ shared_ptr<planner::AbstractPlan> Optimizer::BuildPelotonPlanTree(
     Optimizer::global_cost_map[best_plan.get()] = cost * 100000;
     Optimizer::global_cost_map_mutex.unlock();
     Optimizer::aggregate_query_cost.fetch_add(cost * 100000);
-    Optimizer::optimizer_calls.fetch_add(1);
     // ---------
-
-    if ((optimizer_calls.load() % 10) == 0) {
-      LOG_INFO("Optimizer calls: %llu", optimizer_calls.load());
-      LOG_INFO("Query cost so far: %llu", aggregate_query_cost.load());
-    }
 
     // Reset memo after finishing the optimization
     Reset();
@@ -201,6 +195,8 @@ std::unique_ptr<OptimizerPlanInfo> Optimizer::GetOptimizedPlanInfo(
 
     info_obj->cost = best_expr->GetCost(query_info.physical_props);
     info_obj->plan = std::move(best_plan);
+
+    Optimizer::optimizer_calls.fetch_add(1);
 
     // Reset memo after finishing the optimization
     Reset();

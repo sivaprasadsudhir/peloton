@@ -197,11 +197,10 @@ ProcessResult PostgresProtocolHandler::ExecQueryMessage(
         optimizer::Optimizer::aggregate_query_cost.fetch_add(map[plan.get()]);
       }
       optimizer::Optimizer::global_cost_map_mutex.unlock();
-      optimizer::Optimizer::optimizer_calls.fetch_add(1);
-      if ((optimizer::Optimizer::optimizer_calls.load() % 10) == 0) {
-        LOG_INFO("Optimizer calls: %llu", optimizer::Optimizer::optimizer_calls.load());
-        LOG_INFO("Query cost so far: %llu", optimizer::Optimizer::aggregate_query_cost.load());
-      }
+//      optimizer::Optimizer::optimizer_calls.fetch_add(1);
+//      if ((optimizer::Optimizer::optimizer_calls.load() % 1000) == 0) {
+//        LOG_INFO("Optimizer calls: %llu", optimizer::Optimizer::optimizer_calls.load());
+//      }
       // ---------
 
 

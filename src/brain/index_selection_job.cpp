@@ -10,6 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <include/optimizer/optimizer.h>
 #include "brain/index_selection_util.h"
 #include "brain/index_selection_job.h"
 #include "brain/index_selection.h"
@@ -33,6 +34,7 @@ void IndexSelectionJob::OnJobInvocation(BrainEnvironment *env) {
   auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
   auto txn = txn_manager.BeginTransaction();
   LOG_INFO("Started Index Suggestion Task");
+  optimizer::Optimizer::optimizer_calls = 0;
 
   // Query the catalog for new SQL queries.
   // New SQL queries are the queries that were added to the system
@@ -88,14 +90,14 @@ void IndexSelectionJob::OnJobInvocation(BrainEnvironment *env) {
         // Drop only indexes which are not suggested this time.
         if (!found) {
           LOG_DEBUG("Dropping Index: %s", index_name.c_str());
-          DropIndexRPC(database_object->GetDatabaseOid(), index.second.get());
+          DropIndexRPC(env, database_object->GetDatabaseOid(), index.second.get());
         }
       }
     }
 
     for (auto index : best_config.GetIndexes()) {
       // Create RPC for index creation on the server side.
-      CreateIndexRPC(index.get());
+      CreateIndexRPC(env, index.get());
     }
 
     // Update the last_timestamp to the be the latest query's timestamp in
@@ -109,12 +111,15 @@ void IndexSelectionJob::OnJobInvocation(BrainEnvironment *env) {
   }
   txn_manager.CommitTransaction(txn);
 
+  LOG_INFO("NUMBER OF OPT CALLS MADE BY INDEX SELECTION: %llu", optimizer::Optimizer::optimizer_calls.load());
+  optimizer::Optimizer::optimizer_calls = 0;
+
   is_running = false;
 }
 
-void IndexSelectionJob::CreateIndexRPC(brain::HypotheticalIndexObject *index) {
+void IndexSelectionJob::CreateIndexRPC(BrainEnvironment *env, brain::HypotheticalIndexObject *index) {
   // TODO: Remove hardcoded database name and server end point.
-  capnp::EzRpcClient client("localhost:15445");
+  auto &client = env->GetPelotonClient();
   PelotonService::Client peloton_service = client.getMain<PelotonService>();
 
   // Create the index name: concat - db_id, table_id, col_ids
@@ -144,10 +149,10 @@ void IndexSelectionJob::CreateIndexRPC(brain::HypotheticalIndexObject *index) {
   auto response = request.send().wait(client.getWaitScope());
 }
 
-void IndexSelectionJob::DropIndexRPC(oid_t database_oid,
+void IndexSelectionJob::DropIndexRPC(BrainEnvironment *env, oid_t database_oid,
                                      catalog::IndexCatalogObject *index) {
   // TODO: Remove hardcoded database name and server end point.
-  capnp::EzRpcClient client("localhost:15445");
+  auto &client = env->GetPelotonClient();
   PelotonService::Client peloton_service = client.getMain<PelotonService>();
 
   auto request = peloton_service.dropIndexRequest();

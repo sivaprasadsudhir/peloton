@@ -19,11 +19,14 @@
 
 namespace peloton {
 namespace stats {
+
 // TODO(tianyu): This is a hack to not log internal transactions. Fix this eventually
 class TupleAccessRawData: public AbstractRawData {
  public:
+
+  static std::atomic<unsigned long long> num_reads;
+
   inline void LogTupleRead(txn_id_t tid) {
-    static std::atomic<unsigned long long> num_reads(0);
     static unsigned long long threshold = 100000;
 
     num_reads.fetch_add(1);
@@ -31,7 +34,6 @@ class TupleAccessRawData: public AbstractRawData {
     unsigned long long cur_num_reads = num_reads.load(std::memory_order_acquire);
     
     if (cur_num_reads % threshold == 0) {
-      LOG_INFO("NUMBER OF TUPLES READ CROSSED %llu", cur_num_reads);
       // num_reads.store(0,std::memory_order_acquire);
     }
 

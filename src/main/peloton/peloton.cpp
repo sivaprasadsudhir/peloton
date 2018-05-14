@@ -50,6 +50,9 @@ int RunPelotonServer() {
 }
 
 int RunPelotonBrain() {
+
+  sleep(5);
+
   // TODO(tianyu): boot up other peloton resources as needed here
   peloton::brain::Brain brain;
   evthread_use_pthreads();
@@ -101,32 +104,32 @@ int main(int argc, char *argv[]) {
 
   peloton::settings::SettingsManager::SetBool(
       peloton::settings::SettingId::brain_data_collection, true);
-
-  int exit_code = 0;
-  if (peloton::settings::SettingsManager::GetBool(
-          peloton::settings::SettingId::brain))
-    exit_code = RunPelotonBrain();
-  else
-    exit_code = RunPelotonServer();
+//
+//  int exit_code = 0;
+//  if (peloton::settings::SettingsManager::GetBool(
+//          peloton::settings::SettingId::brain))
+//    exit_code = RunPelotonBrain();
+//  else
+//    exit_code = RunPelotonServer();
 
   // TODO[Siva]: Remove this from the final PR. Uncomment this to run brain
   // and server in the same process for testing. This is a temporary to way to
   // run both peloton server and the brain together to test the index suggestion
   // at the brain end without catalog replication between the server and the
   // brain
-  // peloton::settings::SettingsManager::SetBool(
-  //     peloton::settings::SettingId::brain, true);
-  // peloton::settings::SettingsManager::SetBool(
-  //     peloton::settings::SettingId::rpc_enabled, true);
+   peloton::settings::SettingsManager::SetBool(
+       peloton::settings::SettingId::brain, true);
+   peloton::settings::SettingsManager::SetBool(
+       peloton::settings::SettingId::rpc_enabled, true);
 
-  // int exit_code = 0;
-  // if (peloton::settings::SettingsManager::GetBool(
-  //         peloton::settings::SettingId::brain)) {
-  //   std::thread brain(RunPelotonBrain);
-  //   exit_code = RunPelotonServer();
-  //   brain.join();
-  // } else
-  //   exit_code = RunPelotonServer();
+   int exit_code = 0;
+   if (peloton::settings::SettingsManager::GetBool(
+           peloton::settings::SettingId::brain)) {
+     std::thread brain(RunPelotonBrain);
+     exit_code = RunPelotonServer();
+     brain.join();
+   } else
+     exit_code = RunPelotonServer();
 
   return exit_code;
 }

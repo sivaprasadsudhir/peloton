@@ -17,6 +17,9 @@
 
 namespace peloton {
 namespace stats {
+
+std::atomic<unsigned long long> TupleAccessRawData::num_reads(0);
+
 void TupleAccessRawData::WriteToCatalog(txn_id_t tid,
                                         bool complete,
                                         bool commit,

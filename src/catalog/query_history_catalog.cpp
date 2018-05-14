@@ -31,17 +31,13 @@ QueryHistoryCatalog::QueryHistoryCatalog(concurrency::TransactionContext *txn)
                       " ("
                       "query_string   VARCHAR NOT NULL, "
                       "fingerprint    VARCHAR NOT NULL, "
-                      "timestamp      BIGINT NOT NULL,"
-                      "PRIMARY KEY(query_string, timestamp));",
-                      txn) {}
-
-//                       "timestamp      TIMESTAMP NOT NULL);",
-//                       txn) {
-//   // Secondary index on timestamp
-//   Catalog::GetInstance()->CreateIndex(
-//       CATALOG_DATABASE_NAME, CATALOG_SCHEMA_NAME, QUERY_HISTORY_CATALOG_NAME,
-//       {2}, QUERY_HISTORY_CATALOG_NAME "_skey0", false, IndexType::BWTREE, txn);
-// }
+                      "timestamp      BIGINT NOT NULL);",
+                      txn) {
+   // Secondary index on timestamp
+   Catalog::GetInstance()->CreateIndex(
+       CATALOG_DATABASE_NAME, CATALOG_SCHEMA_NAME, QUERY_HISTORY_CATALOG_NAME,
+       {2}, QUERY_HISTORY_CATALOG_NAME "_skey0", false, IndexType::BWTREE, txn);
+ }
 
 QueryHistoryCatalog::~QueryHistoryCatalog() = default;
 
@@ -92,7 +88,7 @@ QueryHistoryCatalog::GetQueryStringsAfterTimestamp(
         auto timestamp = tile->GetValue(i, 0).GetAs<uint64_t>();
         auto query_string = tile->GetValue(i, 1).GetAs<char *>();
         auto pair = std::make_pair(timestamp, query_string);
-        LOG_INFO("Query: %" PRId64 ": %s", pair.first, pair.second);
+        LOG_DEBUG("Query: %" PRId64 ": %s", pair.first, pair.second);
         queries->emplace_back(pair);
       }
     }

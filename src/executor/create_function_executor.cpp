@@ -12,6 +12,7 @@
 
 #include "executor/create_function_executor.h"
 #include <iostream>
+#include <include/optimizer/optimizer.h>
 #include "catalog/catalog.h"
 #include "catalog/language_catalog.h"
 #include "common/logger.h"
@@ -21,6 +22,7 @@
 #include "udf/udf_handler.h"
 #include "optimizer/stats/stats_storage.h"
 #include "brain/index_selection_job.h"
+#include "statistics/tuple_access_metric.h"
 
 namespace peloton {
 namespace executor {
@@ -47,6 +49,10 @@ bool CreateFunctionExecutor::DExecute() {
       GetPlanNode<planner::CreateFunctionPlan>();
   auto current_txn = context->GetTransaction();
 
+
+  // TODO: Hack: Log stats.
+  LOG_INFO("NUMBER OF TUPLE READS: %llu", stats::TupleAccessRawData::num_reads.load());
+  LOG_INFO("AGGREGATE COST OF OPTIMIZER: %llu", optimizer::Optimizer::aggregate_query_cost.load());
 
   // TODO: HACK: Remove: Analyze table column stats
   optimizer::StatsStorage *stats_storage =

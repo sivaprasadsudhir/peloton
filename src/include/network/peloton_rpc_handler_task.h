@@ -58,7 +58,7 @@ class PelotonRpcServerImpl final : public PelotonService::Server {
     auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
     auto txn = txn_manager.BeginTransaction();
 
-    LOG_DEBUG("Executing Drop Index Query: %ld", index_oid);
+    LOG_DEBUG("Executing Drop Index Query: %d", index_oid);
     // Drop index. Fail if it doesn't exist.
     auto catalog = catalog::Catalog::GetInstance();
     try {
@@ -189,8 +189,8 @@ class PelotonRpcServerImpl final : public PelotonService::Server {
     std::vector<int> result_format(statement->GetTupleDescriptor().size(), 0);
     // SetTrafficCopCounter();
     counter_.store(1);
-    auto status = traffic_cop_.ExecuteStatement(
-        statement, param_values, unnamed, nullptr, result_format, result);
+    auto status = traffic_cop_.ExecuteStatement(statement, param_values, unnamed,
+                                                result_format, result);
     if (traffic_cop_.GetQueuing()) {
       while (counter_.load() == 1) {
         usleep(10);

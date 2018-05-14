@@ -40,37 +40,37 @@ void IndexSelection::GetBestIndexes(IndexConfiguration &final_indexes) {
   // Start the index selection.
   for (unsigned long i = 0; i < context_.knobs_.num_iterations_; i++) {
     LOG_INFO("******* Iteration %ld **********", i);
-    LOG_INFO("Candidate Indexes Before: %s",
+    LOG_DEBUG("Candidate Indexes Before: %s",
               candidate_indexes.ToString().c_str());
     GenerateCandidateIndexes(candidate_indexes, admissible_indexes, query_set_);
     LOG_TRACE("Admissible Indexes: %s", admissible_indexes.ToString().c_str());
-    LOG_INFO("Candidate Indexes After: %s",
+    LOG_DEBUG("Candidate Indexes After: %s",
               candidate_indexes.ToString().c_str());
 
-    LOG_INFO("Starting enumeration");
+    LOG_DEBUG("Starting enumeration");
     // Configuration Enumeration
     IndexConfiguration top_candidate_indexes;
     Enumerate(candidate_indexes, top_candidate_indexes, query_set_,
               context_.knobs_.num_indexes_);
-    LOG_INFO("Done with enumeration");
+    LOG_DEBUG("Done with enumeration");
     LOG_TRACE("Top Candidate Indexes: %s",
               candidate_indexes.ToString().c_str());
 
     candidate_indexes = top_candidate_indexes;
 
-    LOG_INFO("Starting MC index gen");
+    LOG_DEBUG("Starting MC index gen");
     // Generate multi-column indexes before starting the next iteration.
     // Only do this if there is next iteration.
     if (i < (context_.knobs_.num_iterations_ - 1)) {
       GenerateMultiColumnIndexes(top_candidate_indexes, admissible_indexes,
                                  candidate_indexes);
     }
-    LOG_INFO("Done with MC index gen");
+    LOG_DEBUG("Done with MC index gen");
     LOG_INFO("******* Iteration DONE **********");
   }
-  LOG_INFO("Max optimizer time: %lf", max_optimizer_time_);
-  LOG_INFO("Num optimizer calls: %lu", optimizer_calls_);
-  LOG_INFO("Num memo hits: %lu", memo_hits_);
+  LOG_DEBUG("Max optimizer time: %lf", max_optimizer_time_);
+  LOG_DEBUG("Num optimizer calls: %lu", optimizer_calls_);
+  LOG_DEBUG("Num memo hits: %lu", memo_hits_);
   final_indexes = candidate_indexes;
 }
 
