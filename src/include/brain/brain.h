@@ -40,7 +40,7 @@ class BrainEnvironment {
       sql_connection_{
           settings::SettingsManager::GetString(
               settings::SettingId::peloton_address)} {
-                  index_selection_knobs = {3, 3, 10}; }
+                  index_selection_knobs = {3, 2, 10}; }
 
   IndexSelectionKnobs GetIndexSelectionKnobs() { return index_selection_knobs; }
 
