@@ -99,6 +99,111 @@ void IndexSelectionJob::OnJobInvocation(BrainEnvironment *env) {
 
     LOG_INFO("Naive enumeration : 4 : %lf", timer_ms_.GetDuration());
 
+    max_index_cols = 2;
+    enumeration_threshold = 2;
+    num_indexes = 10;
+    knobs = {max_index_cols, enumeration_threshold, num_indexes};
+    is = {workload, knobs, txn};
+
+    timer_ms_.Reset();
+    timer_ms_.Start();
+    is.GetBestIndexes(best_config);
+    timer_ms_.Stop();
+
+    LOG_INFO("num columns : 2 : %lf", timer_ms_.GetDuration());
+
+    max_index_cols = 3;
+    enumeration_threshold = 2;
+    num_indexes = 10;
+    knobs = {max_index_cols, enumeration_threshold, num_indexes};
+    is = {workload, knobs, txn};
+
+    timer_ms_.Reset();
+    timer_ms_.Start();
+    is.GetBestIndexes(best_config);
+    timer_ms_.Stop();
+
+    LOG_INFO("num columns : 3 : %lf", timer_ms_.GetDuration());
+
+    max_index_cols = 4;
+    enumeration_threshold = 2;
+    num_indexes = 10;
+    knobs = {max_index_cols, enumeration_threshold, num_indexes};
+    is = {workload, knobs, txn};
+
+    timer_ms_.Reset();
+    timer_ms_.Start();
+    is.GetBestIndexes(best_config);
+    timer_ms_.Stop();
+
+    LOG_INFO("num columns : 4 : %lf", timer_ms_.GetDuration());
+
+
+    max_index_cols = 3;
+    enumeration_threshold = 2;
+    num_indexes = 2;
+    knobs = {max_index_cols, enumeration_threshold, num_indexes};
+    is = {workload, knobs, txn};
+
+    timer_ms_.Reset();
+    timer_ms_.Start();
+    is.GetBestIndexes(best_config);
+    timer_ms_.Stop();
+
+    LOG_INFO("num indexes : 2 : %lf", timer_ms_.GetDuration());
+
+    max_index_cols = 3;
+    enumeration_threshold = 2;
+    num_indexes = 4;
+    knobs = {max_index_cols, enumeration_threshold, num_indexes};
+    is = {workload, knobs, txn};
+
+    timer_ms_.Reset();
+    timer_ms_.Start();
+    is.GetBestIndexes(best_config);
+    timer_ms_.Stop();
+
+    LOG_INFO("num indexes : 4 : %lf", timer_ms_.GetDuration());
+
+    max_index_cols = 3;
+    enumeration_threshold = 2;
+    num_indexes = 6;
+    knobs = {max_index_cols, enumeration_threshold, num_indexes};
+    is = {workload, knobs, txn};
+
+    timer_ms_.Reset();
+    timer_ms_.Start();
+    is.GetBestIndexes(best_config);
+    timer_ms_.Stop();
+
+    LOG_INFO("num indexes : 6 : %lf", timer_ms_.GetDuration());
+
+    max_index_cols = 3;
+    enumeration_threshold = 2;
+    num_indexes = 8;
+    knobs = {max_index_cols, enumeration_threshold, num_indexes};
+    is = {workload, knobs, txn};
+
+    timer_ms_.Reset();
+    timer_ms_.Start();
+    is.GetBestIndexes(best_config);
+    timer_ms_.Stop();
+
+    LOG_INFO("num indexes : 8 : %lf", timer_ms_.GetDuration());
+
+    max_index_cols = 3;
+    enumeration_threshold = 2;
+    num_indexes = 10;
+    knobs = {max_index_cols, enumeration_threshold, num_indexes};
+    is = {workload, knobs, txn};
+
+    timer_ms_.Reset();
+    timer_ms_.Start();
+    is.GetBestIndexes(best_config);
+    timer_ms_.Stop();
+
+    LOG_INFO("num indexes : 10 : %lf", timer_ms_.GetDuration());
+
     // brain::IndexSelection is = {workload, env->GetIndexSelectionKnobs(), txn};
     // LOG_INFO("Workload created");
 
