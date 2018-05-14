@@ -179,7 +179,7 @@ executor::ExecutionResult TrafficCop::ExecuteHelper(
   if (settings::SettingsManager::GetBool(
           settings::SettingId::brain_data_collection)) {
 
-    if(statement_->GetQueryType() != QueryType::QUERY_INSERT){
+    if(statement_ && statement_->GetQueryType() != QueryType::QUERY_INSERT){
       tcop_txn_state_.top().first->AddQueryString(
           statement_->GetQueryString().c_str());
     }
