@@ -104,13 +104,13 @@ int main(int argc, char *argv[]) {
 
   peloton::settings::SettingsManager::SetBool(
       peloton::settings::SettingId::brain_data_collection, true);
-//
-//  int exit_code = 0;
-//  if (peloton::settings::SettingsManager::GetBool(
-//          peloton::settings::SettingId::brain))
-//    exit_code = RunPelotonBrain();
-//  else
-//    exit_code = RunPelotonServer();
+
+ // int exit_code = 0;
+ // if (peloton::settings::SettingsManager::GetBool(
+ //         peloton::settings::SettingId::brain))
+ //   exit_code = RunPelotonBrain();
+ // else
+ //   exit_code = RunPelotonServer();
 
   // TODO[Siva]: Remove this from the final PR. Uncomment this to run brain
   // and server in the same process for testing. This is a temporary to way to

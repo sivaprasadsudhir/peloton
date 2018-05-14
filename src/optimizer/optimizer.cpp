@@ -140,6 +140,8 @@ shared_ptr<planner::AbstractPlan> Optimizer::BuildPelotonPlanTree(
     auto best_expr = group->GetBestExpression(query_info.physical_props);
     auto cost = best_expr->GetCost(query_info.physical_props);
 
+    // LOG_INFO("Cost : %lf", cost);
+
     // Put the cost into the global map.
     // ---------
     Optimizer::global_cost_map_mutex.lock();

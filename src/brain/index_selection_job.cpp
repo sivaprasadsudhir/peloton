@@ -56,56 +56,97 @@ void IndexSelectionJob::OnJobInvocation(BrainEnvironment *env) {
     LOG_INFO("Knob Num Indexes: %zu", env->GetIndexSelectionKnobs().num_indexes_);
     LOG_INFO("Knob Naive: %zu", env->GetIndexSelectionKnobs().naive_enumeration_threshold_);
     LOG_INFO("Knob Num Iterations: %zu", env->GetIndexSelectionKnobs().num_iterations_);
-    brain::IndexSelection is = {workload, env->GetIndexSelectionKnobs(), txn};
-    LOG_INFO("Workload created");
+
+
+    size_t max_index_cols = 3;
+    size_t enumeration_threshold = 2;
+    size_t num_indexes = 10;
+    brain::IndexSelectionKnobs knobs = {max_index_cols, enumeration_threshold,
+                                        num_indexes};
+    brain::IndexSelection is = {workload, knobs, txn};
     brain::IndexConfiguration best_config;
+    Timer<std::ratio<1, 1000>> timer_ms_;
+
+    timer_ms_.Start();
     is.GetBestIndexes(best_config);
+    timer_ms_.Stop();
 
-    if (best_config.IsEmpty()) {
-      LOG_INFO("Best config is empty");
-    }
+    LOG_INFO("Naive enumeration : 2 : %lf", timer_ms_.GetDuration());
 
-    // Get the existing indexes and drop them.
-    // TODO: Handle multiple databases
-    auto database_object = catalog::Catalog::GetInstance()->GetDatabaseObject(
-      DEFAULT_DB_NAME, txn);
-    auto pg_index = catalog::Catalog::GetInstance()
-      ->GetSystemCatalogs(database_object->GetDatabaseOid())
-      ->GetIndexCatalog();
-    auto indexes = pg_index->GetIndexObjects(txn);
-    for (auto index : indexes) {
-      auto index_name = index.second->GetIndexName();
-      // TODO [vamshi]: REMOVE THIS IN THE FINAL CODE
-      // This is a hack for now. Add a boolean to the index catalog to
-      // find out if an index is a brain suggested index/user created index.
-      if (index_name.find(BRAIN_SUGGESTED_INDEX_MAGIC_STR) !=
-          std::string::npos) {
-        bool found = false;
-        for (auto installed_index: best_config.GetIndexes()) {
-          if ((index.second.get()->GetTableOid() == installed_index.get()->table_oid) &&
-          (index.second.get()->GetKeyAttrs() == installed_index.get()->column_oids)) {
-            found = true;
-          }
-        }
-        // Drop only indexes which are not suggested this time.
-        if (!found) {
-          LOG_DEBUG("Dropping Index: %s", index_name.c_str());
-          DropIndexRPC(env, database_object->GetDatabaseOid(), index.second.get());
-        }
-      }
-    }
+    max_index_cols = 3;
+    enumeration_threshold = 3;
+    num_indexes = 10;
+    knobs = {max_index_cols, enumeration_threshold, num_indexes};
+    is = {workload, knobs, txn};
 
-    for (auto index : best_config.GetIndexes()) {
-      // Create RPC for index creation on the server side.
-      CreateIndexRPC(env, index.get());
-    }
+    timer_ms_.Reset();
+    timer_ms_.Start();
+    is.GetBestIndexes(best_config);
+    timer_ms_.Stop();
 
-    // Update the last_timestamp to the be the latest query's timestamp in
-    // the current workload, so that we fetch the new queries next time.
-    // TODO[vamshi]: Make this efficient. Currently assuming that the latest
-    // query can be anywhere in the vector. if the latest query is always at the
-    // end, then we can avoid scan over all the queries.
-    last_timestamp_ = GetLatestQueryTimestamp(query_history.get());
+    LOG_INFO("Naive enumeration : 3 : %lf", timer_ms_.GetDuration());
+
+    max_index_cols = 3;
+    enumeration_threshold = 3;
+    num_indexes = 10;
+    knobs = {max_index_cols, enumeration_threshold, num_indexes};
+    is = {workload, knobs, txn};
+
+    timer_ms_.Reset();
+    timer_ms_.Start();
+    is.GetBestIndexes(best_config);
+    timer_ms_.Stop();
+
+    LOG_INFO("Naive enumeration : 4 : %lf", timer_ms_.GetDuration());
+
+    // brain::IndexSelection is = {workload, env->GetIndexSelectionKnobs(), txn};
+    // LOG_INFO("Workload created");
+
+    // if (best_config.IsEmpty()) {
+    //   LOG_INFO("Best config is empty");
+    // }
+
+    // // Get the existing indexes and drop them.
+    // // TODO: Handle multiple databases
+    // auto database_object = catalog::Catalog::GetInstance()->GetDatabaseObject(
+    //   DEFAULT_DB_NAME, txn);
+    // auto pg_index = catalog::Catalog::GetInstance()
+    //   ->GetSystemCatalogs(database_object->GetDatabaseOid())
+    //   ->GetIndexCatalog();
+    // auto indexes = pg_index->GetIndexObjects(txn);
+    // for (auto index : indexes) {
+    //   auto index_name = index.second->GetIndexName();
+    //   // TODO [vamshi]: REMOVE THIS IN THE FINAL CODE
+    //   // This is a hack for now. Add a boolean to the index catalog to
+    //   // find out if an index is a brain suggested index/user created index.
+    //   if (index_name.find(BRAIN_SUGGESTED_INDEX_MAGIC_STR) !=
+    //       std::string::npos) {
+    //     bool found = false;
+    //     for (auto installed_index: best_config.GetIndexes()) {
+    //       if ((index.second.get()->GetTableOid() == installed_index.get()->table_oid) &&
+    //       (index.second.get()->GetKeyAttrs() == installed_index.get()->column_oids)) {
+    //         found = true;
+    //       }
+    //     }
+    //     // Drop only indexes which are not suggested this time.
+    //     if (!found) {
+    //       LOG_DEBUG("Dropping Index: %s", index_name.c_str());
+    //       DropIndexRPC(env, database_object->GetDatabaseOid(), index.second.get());
+    //     }
+    //   }
+    // }
+
+    // for (auto index : best_config.GetIndexes()) {
+    //   // Create RPC for index creation on the server side.
+    //   CreateIndexRPC(env, index.get());
+    // }
+
+    // // Update the last_timestamp to the be the latest query's timestamp in
+    // // the current workload, so that we fetch the new queries next time.
+    // // TODO[vamshi]: Make this efficient. Currently assuming that the latest
+    // // query can be anywhere in the vector. if the latest query is always at the
+    // // end, then we can avoid scan over all the queries.
+    // last_timestamp_ = GetLatestQueryTimestamp(query_history.get());
   } else {
     LOG_INFO("Tuning - not this time");
   }
